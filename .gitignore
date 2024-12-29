@@ -24,3 +24,4 @@ schema.hcl
 /deploy/base/custom
 /bin/*
 /export/*
+/logs/*
