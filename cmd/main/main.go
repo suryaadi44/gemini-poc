@@ -14,7 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 
-	gemini_app "gemini-poc/app"
+	"gemini-poc/app/router"
 )
 
 var SERVICE_ONE = "http://localhost:8000"
@@ -43,7 +43,7 @@ func main() {
 	)
 	app.Use(fiberLogger)
 
-	gemini_app.InitRoute(app, conf, log)
+	router.InitRoute(app, conf, log)
 
 	listen := net.JoinHostPort(conf.Server.Rest.Host, strconv.Itoa(conf.Server.Rest.Port))
 	go func() {

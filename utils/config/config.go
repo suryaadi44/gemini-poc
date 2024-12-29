@@ -29,6 +29,7 @@ type Config struct {
 		ShutdownTimeout time.Duration `mapstructure:"shutdownTimeout"`
 		TargetHost      string        `mapstructure:"targetHost"`
 		DestinationHost string        `mapstructure:"destinationHost"`
+		ProxyTimeout    time.Duration `mapstructure:"proxyTimeout"`
 		Mirrors         []struct {
 			Name      string   `mapstructure:"name"`
 			Methods   []string `mapstructure:"methods"`
@@ -44,10 +45,9 @@ type Config struct {
 	} `mapstructure:"log"`
 	Server struct {
 		Rest struct {
-			Host           string   `mapstructure:"host"`
-			Port           int      `mapstructure:"port"`
-			Prefork        bool     `mapstructure:"prefork"`
-			AllowedOrigins []string `mapstructure:"allowedOrigins"`
+			Host    string `mapstructure:"host"`
+			Port    int    `mapstructure:"port"`
+			Prefork bool   `mapstructure:"prefork"`
 		} `mapstructure:"rest"`
 	} `mapstructure:"server"`
 }

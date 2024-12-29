@@ -1,4 +1,4 @@
-package app
+package router
 
 import (
 	"gemini-poc/utils/config"
@@ -13,11 +13,11 @@ func InitRoute(
 	conf *config.Config,
 	log *zap.Logger,
 ) {
-
 	app.Use(proxy.Balancer(proxy.Config{
 		Servers: []string{
 			conf.App.TargetHost,
 		},
+		Timeout: conf.App.ProxyTimeout,
 		ModifyRequest: func(c *fiber.Ctx) error {
 			c.Request().Header.Add("X-Real-IP", c.IP())
 			return nil
