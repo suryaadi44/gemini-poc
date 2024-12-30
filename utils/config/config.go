@@ -21,20 +21,24 @@ const (
 	MaxAge = 28
 )
 
+type MirrorsConfig struct {
+	Name      string
+	Methods   []string
+	Endpoints []string
+}
+
 type Config struct {
 	App struct {
-		Service         string        `mapstructure:"service"`
-		Environment     string        `mapstructure:"environment"`
-		Timezone        string        `mapstructure:"timezone"`
-		ShutdownTimeout time.Duration `mapstructure:"shutdownTimeout"`
-		TargetHost      string        `mapstructure:"targetHost"`
-		DestinationHost string        `mapstructure:"destinationHost"`
-		ProxyTimeout    time.Duration `mapstructure:"proxyTimeout"`
-		Mirrors         []struct {
-			Name      string   `mapstructure:"name"`
-			Methods   []string `mapstructure:"methods"`
-			Endpoints []string `mapstructure:"endpoint"`
-		} `mapstructure:"mirrors"`
+		Service              string          `mapstructure:"service"`
+		Environment          string          `mapstructure:"environment"`
+		Timezone             string          `mapstructure:"timezone"`
+		ShutdownTimeout      time.Duration   `mapstructure:"shutdownTimeout"`
+		TargetHost           string          `mapstructure:"targetHost"`
+		DestinationHost      string          `mapstructure:"destinationHost"`
+		ProxyTimeout         time.Duration   `mapstructure:"proxyTimeout"`
+		MaxMirrorWorker      int             `mapstructure:"maxMirrorWorker"`
+		MaxMirrorWorkerQueue int             `mapstructure:"maxMirrorWorkerQueue"`
+		Mirrors              []MirrorsConfig `mapstructure:"mirrors"`
 	} `mapstructure:"app"`
 	Log struct {
 		Level      string `mapstructure:"level"`

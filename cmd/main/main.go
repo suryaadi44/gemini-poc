@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 
+	"gemini-poc/app/controller"
 	"gemini-poc/app/router"
 )
 
@@ -37,8 +38,9 @@ func main() {
 	fiberLogger := fiberzap.New(fiberzapConfig)
 	app := fiber.New(
 		fiber.Config{
-			Prefork: conf.Server.Rest.Prefork,
-			AppName: conf.App.Service,
+			Prefork:      conf.Server.Rest.Prefork,
+			AppName:      conf.App.Service,
+			ErrorHandler: controller.HandlerError,
 		},
 	)
 	app.Use(fiberLogger)
