@@ -25,7 +25,11 @@ func (m *MirrorController) MirrorRequest(c *fiber.Ctx) error {
 	err := json.Unmarshal(c.Response().Body(), &baseResponse)
 	if err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(
-			dto.NewErrorResponse(fiber.StatusBadGateway, "Failed to unmarshal response body", []string{err.Error()}),
+			dto.NewErrorResponse(
+				fiber.StatusBadGateway,
+				"Error while unmarshalling target response body, but the destination request is still sent",
+				[]string{err.Error()},
+			),
 		)
 	}
 
