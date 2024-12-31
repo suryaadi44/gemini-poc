@@ -7,3 +7,9 @@ clean:
 
 build-debug: clean
 	CGO_ENABLED=0 go build -gcflags=all="-N -l" -o bin/$(BINARY_NAME)-debug cmd/main/main.go
+
+air:
+	air -c air.toml
+
+air-debug:
+	air -c air.debug.toml
