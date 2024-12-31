@@ -42,11 +42,6 @@ func NewAuthService(
 		log:  log,
 	}
 
-	err := a.FetchServiceToken()
-	if err != nil {
-		log.Panic("Error getting service token", zap.Error(err))
-	}
-
 	return &a
 }
 
@@ -80,13 +75,23 @@ func (a *AuthService) RefreshServiceToken() error {
 	return nil
 }
 
-func (a *AuthService) getServiceToken() *dto.AuthResponse {
+func (a *AuthService) getAuthToken() *dto.AuthResponse {
 	a.token.mu.Lock()
 	defer a.token.mu.Unlock()
 
 	return &a.token.AuthResponse
 }
 
+func (a *AuthService) getAccessToken() string {
+	if a.getAuthToken().AccessToken == "" {
+		if err := a.FetchServiceToken(); err != nil {
+			return ""
+		}
+	}
+
+	return a.getAuthToken().AccessToken
+}
+
 func (a *AuthService) GetAuthorizationHeader() string {
-	return fmt.Sprintf("Bearer %s", a.getServiceToken().AccessToken)
+	return fmt.Sprintf("Bearer %s", a.getAccessToken())
 }
