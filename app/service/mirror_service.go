@@ -6,7 +6,9 @@ import (
 	"gemini-poc/app/dto"
 	"gemini-poc/utils/config"
 	"gemini-poc/utils/custom"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -14,32 +16,38 @@ import (
 )
 
 type MirrorService struct {
+	as   *AuthService
 	da   *adapter.DestinationAdapter
 	pool custom.WorkerPool
 
 	mirrorWhitelist map[string]*dto.MethodWhitelist
 	pathTrie        *Trie
 
-	conf []config.MirrorsConfig
-	log  *zap.Logger
+	conf           []config.MirrorsConfig
+	maxMirrorRetry config.RetryConfig
+	log            *zap.Logger
 }
 
 func NewMirrorService(
+	as *AuthService,
 	da *adapter.DestinationAdapter,
 	pool custom.WorkerPool,
 
 	conf []config.MirrorsConfig,
+	maxMirrorRetry config.RetryConfig,
 
 	log *zap.Logger,
 ) *MirrorService {
 	return &MirrorService{
+		as:              as,
 		da:              da,
 		pool:            pool,
 		mirrorWhitelist: NewMirrorWhitelist(conf),
 		pathTrie:        NewAndInitTrie(conf),
 
-		conf: conf,
-		log:  log,
+		maxMirrorRetry: maxMirrorRetry,
+		conf:           conf,
+		log:            log,
 	}
 }
 
@@ -213,11 +221,53 @@ func (m *MirrorService) MirrorRequest(
 	// add the task to the worker pool
 	m.pool.AddTask(func() {
 		m.log.Info(fmt.Sprintf("Mirror %s request", method), zap.String("path", path), zap.String("traceparent", traceparent))
-		res, err := m.da.Do(path, method, queries, requestHeaders, body)
-		if err != nil {
-			m.log.Error(fmt.Sprintf("Failed to mirror %s request", method), zap.String("path", path), zap.String("traceparent", traceparent), zap.Error(err))
-		}
+
+		var res []byte
+		var err error
+		var statusCode *int
+
+		m.doRequestWithRetryAndRefresh(func() *int {
+			statusCode, res, err = m.da.Do(path, method, queries, replaceAuthHeader(requestHeaders, m.as.GetAuthorizationHeader()), body)
+			if err != nil {
+				m.log.Error(fmt.Sprintf("Failed to mirror %s request", method), zap.String("path", path), zap.String("traceparent", traceparent), zap.Error(err))
+			}
+
+			return statusCode
+		})
+
 		m.log.Info(fmt.Sprintf("Mirror %s response", method), zap.ByteString("response", res), zap.String("traceparent", traceparent))
 	})
+}
 
+func (m *MirrorService) doRequestWithRetryAndRefresh(fetch func() *int) {
+	var statusCode *int
+
+	for i := 0; i < m.maxMirrorRetry.Max; i++ {
+		statusCode = fetch()
+		if statusCode != nil && *statusCode == http.StatusUnauthorized {
+			time.Sleep(m.maxMirrorRetry.Delay)
+
+			err := m.as.FetchServiceToken()
+			if err != nil {
+				m.log.Error("Failed to refresh service token", zap.Error(err))
+			}
+		}
+
+		// retry until the request is successful (2XX)
+		if statusCode != nil && *statusCode >= http.StatusOK && *statusCode < 300 {
+			break
+		}
+	}
+}
+
+func replaceAuthHeader(currentHeader map[string][]string, newToken string) map[string][]string {
+	newHeader := make(map[string][]string)
+	for key, value := range currentHeader {
+		if key == "Authorization" {
+			newHeader[key] = []string{newToken}
+		} else {
+			newHeader[key] = value
+		}
+	}
+	return newHeader
 }

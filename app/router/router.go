@@ -17,13 +17,15 @@ func InitRoute(
 	conf *config.Config,
 	log *zap.Logger,
 ) {
-	destination_adapter := adapter.NewDestinationAdapter(conf.App.DestinationHost)
+	destinationAdapter := adapter.NewDestinationAdapter(conf.App.DestinationHost, log.Named("DestinationAdapter"))
 
-	pool_service := service.NewWorkerPool(conf.App.MaxMirrorWorker, conf.App.MaxMirrorWorkerQueue, log.Named("WorkerPool"))
-	pool_service.Run()
+	poolService := service.NewWorkerPool(conf.App.MaxMirrorWorker, conf.App.MaxMirrorWorkerQueue, log.Named("WorkerPool"))
+	poolService.Run()
 
-	mirror_service := service.NewMirrorService(destination_adapter, pool_service, conf.App.Mirrors, log.Named("MirrorService"))
-	mirror_controller := controller.NewMirrorController(mirror_service)
+	authService := service.NewAuthService(destinationAdapter, &conf.App.Auth, log.Named("AuthService"))
+
+	mirrorService := service.NewMirrorService(authService, destinationAdapter, poolService, conf.App.Mirrors, conf.App.MaxMirrorRetry, log.Named("MirrorService"))
+	mirrorController := controller.NewMirrorController(mirrorService)
 
 	app.Use(recover.New(recover.Config{
 		EnableStackTrace: true,
@@ -37,6 +39,6 @@ func InitRoute(
 			c.Request().Header.Add("X-Real-IP", c.IP())
 			return nil
 		},
-		ModifyResponse: mirror_controller.MirrorRequest,
+		ModifyResponse: mirrorController.MirrorRequest,
 	}))
 }
