@@ -22,9 +22,14 @@ const (
 )
 
 type MirrorsConfig struct {
-	Name      string
-	Methods   []string
-	Endpoints []string
+	Name      string   `mapstructure:"name"`
+	Methods   []string `mapstructure:"methods"`
+	Endpoints []string `mapstructure:"endpoints"`
+}
+
+type AuthConfig struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type Config struct {
@@ -38,7 +43,9 @@ type Config struct {
 		ProxyTimeout         time.Duration   `mapstructure:"proxyTimeout"`
 		MaxMirrorWorker      int             `mapstructure:"maxMirrorWorker"`
 		MaxMirrorWorkerQueue int             `mapstructure:"maxMirrorWorkerQueue"`
+		MaxMirrorRetry       RetryConfig     `mapstructure:"maxMirrorRetry"`
 		Mirrors              []MirrorsConfig `mapstructure:"mirrors"`
+		Auth                 AuthConfig      `mapstructure:"auth"`
 	} `mapstructure:"app"`
 	Log struct {
 		Level      string `mapstructure:"level"`
@@ -57,8 +64,8 @@ type Config struct {
 }
 
 type RetryConfig struct {
-	Max   int
-	Delay time.Duration
+	Max   int           `mapstructure:"max"`
+	Delay time.Duration `mapstructure:"delay"`
 }
 
 func Load(path string) *Config {
