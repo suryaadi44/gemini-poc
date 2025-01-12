@@ -8,5 +8,6 @@ FROM debian:stable-slim
 
 # Copy the binary from the builder image
 COPY --from=builder /bin/main .
+RUN cp config.yml config/
 
 CMD [ "sh", "-c", "./main" ]

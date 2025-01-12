@@ -1,0 +1,91 @@
+stages:
+  - build image
+  - deploy
+
+#BUILD CONTAINER#
+.docker_build_template: &docker_build
+  image: docker:20.10.16
+  stage: build image
+  services:
+    - docker:20.10.16-dind
+  variables: &variable_build
+    IMAGE_TAG: $V_IMAGE_TAG
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker info
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - cp $V_CONFIG config.yml
+    - docker build -t $IMAGE_TAG --label "project=${CI_PROJECT_NAME}-${V_LABEL_CONTAINER}" .
+    - docker push $IMAGE_TAG
+  tags:
+    - i-gitlab-runner-01
+
+docker build staging:
+  <<: *docker_build
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ "/^v[0-9]+\.[0-9]+\.[0-9]-rc-rsunegara+$/"'
+      when: always
+    - when: never
+  variables:
+    V_LABEL_CONTAINER: rsunegara-staging-internal
+    V_IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME-build$CI_PIPELINE_IID
+    V_CONFIG: $RSUNEGARA_CONFIG_STAGING_INTERNAL
+    <<: *variable_build
+
+docker build staging rsu:
+  <<: *docker_build
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ "/^v[0-9]+\.[0-9]+\.[0-9]-rcs-rsunegara+$/"'
+      when: always
+    - when: never
+  variables:
+    V_LABEL_CONTAINER: rsunegara-staging-rsu
+    V_IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
+    V_CONFIG: $RSUNEGARA_CONFIG_STAGING
+    <<: *variable_build
+
+docker build prod:
+  <<: *docker_build
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ "/^v[0-9]+\.[0-9]+\.[0-9]-rsunegara+$/"'
+      when: always
+    - when: never
+  variables:
+    V_LABEL_CONTAINER: rsunegara-prod
+    V_IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
+    V_CONFIG: $RSUNEGARA_CONFIG_PROD
+    <<: *variable_build
+
+# DEPLOY IMAGE
+.deploy_template: &deploy
+  stage: deploy
+  image: alpine
+  variables: &variable_deploy
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME-build$CI_PIPELINE_IID
+    CONTAINER_NAME: $CI_PROJECT_ROOT_NAMESPACE-$CI_PROJECT_NAME-$V_LABEL
+  script:
+    - ssh $RSUNEGARA_HOST_DESTINATION "docker info && echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin"
+    - ssh $RSUNEGARA_HOST_DESTINATION "docker pull $IMAGE_TAG"
+    - ssh $RSUNEGARA_HOST_DESTINATION "docker stop $CONTAINER_NAME || true && docker rm $CONTAINER_NAME || true"
+    - ssh $RSUNEGARA_HOST_DESTINATION "docker run -d -p $V_EXPOSE_PORT:$CONTAINER_PORT --name $CONTAINER_NAME $IMAGE_TAG"
+    - ssh $RSUNEGARA_HOST_DESTINATION "docker image prune -af --filter='label=project=${CI_PROJECT_NAME}-${V_LABEL_CONTAINER}'"
+  environment:
+    name: $V_ENV
+    url: http://$V_DOMAIN
+  tags:
+    - i-gitlab-runner-01-shell
+
+deploy staging:
+  <<: *deploy
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ "/^v[0-9]+\.[0-9]+\.[0-9]-rc-rsunegara+$/"'
+      when: always
+    - when: never
+  variables:
+    V_EXPOSE_PORT: $RSUNEGARA_EXPOSE_PORT_STAGING_INTERNAL
+    V_LABEL_CONTAINER: rsunegara-staging-internal
+    V_ENV: Staging.
+    V_DOMAIN: api-rme.rsunegara.sadhanasimrs.com
+    <<: *variable_deploy
