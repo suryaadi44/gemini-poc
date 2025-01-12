@@ -3,8 +3,7 @@ RUN mkdir /app
 ADD . /app
 WORKDIR /app
 RUN go build -o /bin/main -v ./cmd/main/
-RUN mkdir config && \
-    cp config.yml config/
+RUN cp config.yml config/
 
 FROM debian:stable-slim
 
