@@ -1,6 +1,8 @@
 variables:
   # Ensure Go modules are enabled
   GO111MODULE: "on"
+  GOCACHE: "$CI_PROJECT_DIR/.cache/go-build"       # Cache directory for build artifacts
+  GOMODCACHE: "$CI_PROJECT_DIR/.cache/go-modules"  # Cache directory for Go modules
 
 stages:
   - compile
@@ -11,8 +13,6 @@ stages:
 compile app:
   stage: compile
   image: golang:1.23.4
-  before_script:
-    - mkdir -p .cache/go-build && mkdir .cache/go-modules
   script:
     - go mod tidy         # Clean up go.mod and go.sum
     - go mod download     # Download dependencies
@@ -25,8 +25,8 @@ compile app:
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
-      - .cache/go-build              # Cache for Go build artifacts
-      - .cache/go-modules            # Cache for downloaded Go modules
+      - $GOCACHE               # Cache for Go build artifacts
+      - $GOMODCACHE            # Cache for downloaded Go modules
   tags:
     - i-gitlab-runner-01
 
