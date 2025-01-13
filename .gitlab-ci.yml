@@ -1,8 +1,8 @@
 variables:
   # Ensure Go modules are enabled
   GO111MODULE: "on"
-  GOCACHE: ".cache/go-build"       # Cache directory for build artifacts
-  GOMODCACHE: ".cache/go-modules"  # Cache directory for Go modules
+  GOCACHE: "$CI_PROJECT_DIR/cache/go-build"       # Cache directory for build artifacts
+  GOMODCACHE: "$CI_PROJECT_DIR/cache/go-modules"  # Cache directory for Go modules
 
 stages:
   - compile
