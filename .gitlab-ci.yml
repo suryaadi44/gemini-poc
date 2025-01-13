@@ -10,6 +10,7 @@ stages:
 # COMPILE APP
 compile app:
   stage: compile
+  image: golang:1.23.4
   script:
     - go mod tidy         # Clean up go.mod and go.sum
     - go mod download     # Download dependencies
