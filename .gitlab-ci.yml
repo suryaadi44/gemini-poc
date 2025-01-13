@@ -19,7 +19,7 @@ compile app:
     untracked: false
     expire_in: "1 hour"
     paths:
-      - /bin/main
+      - /output/bin/main
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
