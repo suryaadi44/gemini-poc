@@ -1,0 +1,6 @@
+FROM debian:stable-slim
+
+COPY /bin/main .
+COPY config.yml /config/
+
+CMD [ "sh", "-c", "./main" ]

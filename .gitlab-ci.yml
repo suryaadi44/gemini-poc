@@ -1,6 +1,31 @@
+variables:
+  # Ensure Go modules are enabled
+  GO111MODULE: "on"
+
 stages:
+  - compile
   - build image
   - deploy
+
+# COMPILE APP
+compile app:
+  stage: compile
+  script:
+    - go mod tidy         # Clean up go.mod and go.sum
+    - go mod download     # Download dependencies
+    - go build -o /bin/main  # Build the application
+  artifacts:
+    untracked: false
+    expire_in: "1 hour"
+    paths:
+      - /bin/main
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - ~/.cache/go-build    # Cache for compiled build artifacts
+      - ~/go/pkg/mod         # Cache for downloaded Go modules
+  tags:
+    - i-gitlab-runner-01
 
 #BUILD CONTAINER#
 .docker_build_template: &docker_build
@@ -17,7 +42,7 @@ stages:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
     - cp $V_CONFIG config.yml
-    - docker build -t $IMAGE_TAG --label "project=${CI_PROJECT_NAME}-${V_LABEL_CONTAINER}" .
+    - docker build -f dockerfile.ci -t $IMAGE_TAG --label "project=${CI_PROJECT_NAME}-${V_LABEL_CONTAINER}" .
     - docker push $IMAGE_TAG
   tags:
     - i-gitlab-runner-01
@@ -25,7 +50,7 @@ stages:
 docker build staging:
   <<: *docker_build
   rules:
-    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ "/^v[0-9]+\.[0-9]+\.[0-9]-rc-rsunegara+$/" || $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ "/^v[0-9]+\.[0-9]+\.[0-9]-rc-rsunegara+$/"'
       when: always
     - when: never
   variables:
