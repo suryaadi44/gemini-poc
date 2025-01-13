@@ -1,8 +1,6 @@
 variables:
   # Ensure Go modules are enabled
   GO111MODULE: "on"
-  GOCACHE: "$CI_PROJECT_DIR/cache/go-build"       # Cache directory for build artifacts
-  GOMODCACHE: "$CI_PROJECT_DIR/cache/go-modules"  # Cache directory for Go modules
 
 stages:
   - compile
@@ -13,6 +11,8 @@ stages:
 compile app:
   stage: compile
   image: golang:1.23.4
+  before_script:
+    - mkdir .cache
   script:
     - go mod tidy         # Clean up go.mod and go.sum
     - go mod download     # Download dependencies
