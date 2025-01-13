@@ -15,12 +15,12 @@ compile app:
     - mkdir bin
     - go mod tidy         # Clean up go.mod and go.sum
     - go mod download     # Download dependencies
-    - go build -o main -v ./cmd/main/  # Build the application
+    - go build -o bin/main -v ./cmd/main/  # Build the application
   artifacts:
     untracked: false
     expire_in: "1 hour"
     paths:
-      - bin/main
+      - ./bin/main
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
