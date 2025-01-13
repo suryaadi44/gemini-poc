@@ -14,7 +14,7 @@ compile app:
   script:
     - go mod tidy         # Clean up go.mod and go.sum
     - go mod download     # Download dependencies
-    - go build -o /bin/main  # Build the application
+    - go build -o /bin/main -v ./cmd/main/  # Build the application
   artifacts:
     untracked: false
     expire_in: "1 hour"
