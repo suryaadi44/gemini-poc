@@ -94,11 +94,11 @@ docker build prod:
     IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME-build$CI_PIPELINE_IID
     CONTAINER_NAME: $CI_PROJECT_ROOT_NAMESPACE-$CI_PROJECT_NAME-$V_LABEL
   script:
-    - ssh $RSUNEGARA_HOST_DESTINATION "docker info && echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin"
-    - ssh $RSUNEGARA_HOST_DESTINATION "docker pull $IMAGE_TAG"
-    - ssh $RSUNEGARA_HOST_DESTINATION "docker stop $CONTAINER_NAME || true && docker rm $CONTAINER_NAME || true"
-    - ssh $RSUNEGARA_HOST_DESTINATION "docker run -d -p $V_EXPOSE_PORT:$CONTAINER_PORT --name $CONTAINER_NAME $IMAGE_TAG"
-    - ssh $RSUNEGARA_HOST_DESTINATION "docker image prune -af --filter='label=project=${CI_PROJECT_NAME}-${V_LABEL_CONTAINER}'"
+    - ssh $V_HOST "docker info && echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin"
+    - ssh $V_HOST "docker pull $IMAGE_TAG"
+    - ssh $V_HOST "docker stop $CONTAINER_NAME || true && docker rm $CONTAINER_NAME || true"
+    - ssh $V_HOST "docker run -d -p $V_EXPOSE_PORT:$CONTAINER_PORT --name $CONTAINER_NAME $IMAGE_TAG"
+    - ssh $V_HOST "docker image prune -af --filter='label=project=${CI_PROJECT_NAME}-${V_LABEL_CONTAINER}'"
   environment:
     name: $V_ENV
     url: http://$V_DOMAIN
@@ -114,6 +114,7 @@ deploy staging:
   variables:
     V_EXPOSE_PORT: $RSUNEGARA_EXPOSE_PORT_STAGING_INTERNAL
     V_LABEL_CONTAINER: rsunegara-staging-internal
+    V_HOST: $RSUNEGARA_HOST_DESTINATION
     V_ENV: Staging.
     V_DOMAIN: api-rme.rsunegara.sadhanasimrs.com
     <<: *variable_deploy
