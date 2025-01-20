@@ -165,10 +165,11 @@ func (m *MirrorService) MirrorRequest(
 	queries map[string]string,
 	requestHeaders map[string][]string,
 	body []byte,
-	isSuccess bool,
+	responseCode int,
 	responseHeaders map[string][]string,
 ) {
-	if !isSuccess {
+	// check if the response code is in the 2XX range
+	if responseCode < http.StatusOK || responseCode >= 300 {
 		return
 	}
 
